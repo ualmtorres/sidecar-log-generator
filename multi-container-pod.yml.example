@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container-pod
+spec:
+  containers:
+  - name: cite-generator
+    image: yauritux/busybox-curl
+    command: ["/bin/sh", "-c"]
+    args:
+    - >
+      while true;
+      do
+        # Write two log files along with the date and a counter
+        # every second
+        # echo "$i: $(date)" >> /var/log/1.log;
+        frase=$(curl -s https://api.quotable.io/random)
+        echo $frase | grep -o '"content":"[^"]*' | grep -o '[^"]*$'  >> /var/log/app.log;
+        sleep 30;
+      done
+    # Mount the log directory /var/log using a volume
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+  - name: fluentd
+    image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
+    env:
+      - name:  FLUENT_ELASTICSEARCH_HOST
+        value: "xxx.xxx.xxx.xxx"
+      - name:  FLUENT_ELASTICSEARCH_PORT
+        value: "9200"
+      - name: FLUENT_ELASTICSEARCH_SCHEME
+        value: "http"
+      - name: FLUENT_ELASTICSEARCH_USER
+        value: "your-user-here"
+      - name: FLUENT_ELASTICSEARCH_PASSWORD
+        value: "your-password-here"
+      - name: FLUENT_UID
+        value: "0"
+    # Mount the log directory /var/log using a volume
+    # and the config file
+    volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+    - name: config-volume
+      mountPath: /fluentd/etc
+  # Declare volumes for log directory and ConfigMap
+  volumes:
+  - name: varlog
+    emptyDir: {}
+  - name: config-volume
+    configMap:
+      name: fluentd-config
