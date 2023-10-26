@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar-pod
+spec:
+    containers:
+    - name: main-container
+      image: nginx
+    - name: sidecar-container
+      image: busybox
+      command: ['sh', '-c', 'echo Hello from the sidecar container! && sleep 3600']
